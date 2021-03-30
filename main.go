@@ -22,7 +22,9 @@ func main() {
 				targets = strings.Split(arg, "<>")
 				direction = 2
 			}
-			go handle(strings.Split(targets[0], ","), strings.Split(targets[1], ","), direction)
+			t1 := strings.Split(targets[0], ",")
+			t2 := strings.Split(targets[1], ",")
+			go handle(t1, t2, direction)
 		}
 	}
 }
