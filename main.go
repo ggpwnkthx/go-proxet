@@ -10,21 +10,22 @@ import (
 func main() {
 	if len(os.Args) != 0 {
 		for _, arg := range os.Args {
-			var targets []string
-			var direction int
 			if strings.Contains(arg, "->") {
-				targets = strings.Split(arg, "->")
-				direction = 0
+				targets := strings.Split(arg, "->")
+				t1 := strings.Split(targets[0], ",")
+				t2 := strings.Split(targets[1], ",")
+				go handle(t1, t2, 0)
 			} else if strings.Contains(arg, "<-") {
-				targets = strings.Split(arg, "<-")
-				direction = 1
+				targets := strings.Split(arg, "<-")
+				t1 := strings.Split(targets[0], ",")
+				t2 := strings.Split(targets[1], ",")
+				go handle(t1, t2, 1)
 			} else if strings.Contains(arg, "<>") {
-				targets = strings.Split(arg, "<>")
-				direction = 2
+				targets := strings.Split(arg, "<>")
+				t1 := strings.Split(targets[0], ",")
+				t2 := strings.Split(targets[1], ",")
+				go handle(t1, t2, 2)
 			}
-			t1 := strings.Split(targets[0], ",")
-			t2 := strings.Split(targets[1], ",")
-			go handle(t1, t2, direction)
 		}
 	}
 }
