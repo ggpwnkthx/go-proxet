@@ -35,10 +35,12 @@ func main() {
 	Relays.Wait()
 	for len(Relays.list) > 0 {
 		for _, r := range Relays.list {
-			if r.c2 == nil {
-				fmt.Println("waiting for connection to " + (*r.c1).LocalAddr().String())
-			} else {
-				fmt.Println("relaying " + (*r.c1).LocalAddr().String() + " to " + (*r.c2).LocalAddr().String())
+			if r.c1 != nil {
+				if r.c2 == nil {
+					fmt.Println("waiting for connection to " + (*r.c1).LocalAddr().String())
+				} else {
+					fmt.Println("relaying " + (*r.c1).LocalAddr().String() + " to " + (*r.c2).LocalAddr().String())
+				}
 			}
 		}
 	}
