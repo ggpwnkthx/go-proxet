@@ -9,12 +9,13 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 0 {
-		for i := 0; i < len(os.Args); i += 2 {
-			t1 := strings.Split(os.Args[i], ",")
-			t2 := strings.Split(os.Args[1+1], ",")
-			go handle(t1, t2)
-		}
+	for _, a := range os.Args {
+		fmt.Println(a)
+	}
+	for i := 0; i < len(os.Args); i += 2 {
+		t1 := strings.Split(os.Args[i], ",")
+		t2 := strings.Split(os.Args[1+1], ",")
+		go handle(t1, t2)
 	}
 }
 func handle(listen []string, dial []string) {
