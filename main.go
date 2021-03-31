@@ -34,36 +34,33 @@ func main() {
 	CleanUp()
 }
 func proxet(handle string) {
-	if Relays.list[handle].l1 == nil {
-		targets := strings.Split(handle, ";")
-		t1 := strings.Split(targets[0], ",")
-		l1, err := net.Listen(t1[0], t1[1])
-		if err != nil {
-			return
-		}
-		Relays.list[handle].l1 = &l1
+	targets := strings.Split(handle, ";")
+	t1 := strings.Split(targets[0], ",")
+	l1, err := net.Listen(t1[0], t1[1])
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
+	Relays.list[handle].l1 = &l1
 	for {
-		if Relays.list[handle].c1 == nil {
-			c1, err := (*Relays.list[handle].l1).Accept()
-			Relays.list[handle].c1 = &c1
-			if err != nil {
-				continue
-			}
+		c1, err := (*Relays.list[handle].l1).Accept()
+		Relays.list[handle].c1 = &c1
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
 		}
 		go connect(handle)
 	}
 }
 func connect(handle string) {
-	if Relays.list[handle].c2 == nil {
-		targets := strings.Split(handle, ";")
-		t2 := strings.Split(targets[1], ",")
-		c2, err := net.Dial(t2[0], t2[1])
-		if err != nil {
-			return
-		}
-		Relays.list[handle].c2 = &c2
+	targets := strings.Split(handle, ";")
+	t2 := strings.Split(targets[1], ",")
+	c2, err := net.Dial(t2[0], t2[1])
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
+	Relays.list[handle].c2 = &c2
 	go copy(Relays.list[handle].c1, Relays.list[handle].c2)
 	copy(Relays.list[handle].c2, Relays.list[handle].c1)
 }
