@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -11,70 +10,83 @@ import (
 	"syscall"
 )
 
-var unixSocketPaths []string
+type proxet struct {
+	listener net.Listener
+	dialer   net.Conn
+}
+
+var Proxettes = struct {
+	sync.RWMutex
+	sync.WaitGroup
+	list map[string]*proxet
+}{
+	list: map[string]*proxet{},
+}
 
 func main() {
-	var wg sync.WaitGroup
+	// Cancellation Context
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		fmt.Println("\r- Ctrl+C pressed in Terminal")
-		DeleteFiles(&wg)
+		CleanUp()
 		os.Exit(0)
 	}()
 
+	// Parse args
 	for i := 1; i < len(os.Args); i += 2 {
-		wg.Add(1)
-		t1 := strings.Split(os.Args[i], ",")
-		t2 := strings.Split(os.Args[1+1], ",")
-		go handle(t1, t2, &wg)
+		Proxettes.Add(1)
+		go listen(os.Args[i], os.Args[1+1])
 	}
-	wg.Wait()
-}
-func handle(listen []string, dial []string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	if listen[0] == "unix" {
-		defer os.Remove(listen[1])
-		unixSocketPaths = append(unixSocketPaths, listen[1])
-	}
-	for {
-		fmt.Println("starting listener of type " + listen[0] + " at " + listen[1])
-		l, err := net.Listen(listen[0], listen[1])
-		if err != nil {
-			fmt.Println(err.Error())
-			continue
-		}
-		for {
-			c1, err := l.Accept()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
+	Proxettes.Wait()
+	for len(Proxettes.list) > 0 {
+		for k, p := range Proxettes.list {
+			if p.dialer == nil {
+				c1, err := p.listener.Accept()
+				if err != nil {
+					fmt.Println(err.Error())
+					continue
+				}
+				dial := strings.Split(k, ";")[1]
+				go connect(c1, dial)
 			}
-			fmt.Println("starting dialer of type " + dial[0] + " at " + dial[1])
-			go connect(c1, dial)
 		}
 	}
+	CleanUp()
 }
-func connect(c1 net.Conn, target []string) {
-	if target[0] == "unix" {
-		defer os.Remove(target[1])
-		unixSocketPaths = append(unixSocketPaths, target[1])
+func listen(listen string, dial string) {
+	fmt.Println("opening " + listen)
+	t1 := strings.Split(listen, ",")
+	l, err := net.Listen(t1[0], t1[1])
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	c2, err := net.Dial(target[0], target[1])
+	Proxettes.Lock()
+	Proxettes.list[listen+";"+dial].listener = l
+	Proxettes.Unlock()
+	Proxettes.Done()
+}
+func connect(c1 net.Conn, target string) {
+	fmt.Println("opening " + target)
+	t2 := strings.Split(target, ",")
+	c2, err := net.Dial(t2[0], t2[1])
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	go io.Copy(c1, c2)
-	io.Copy(c2, c1)
+	Proxettes.Lock()
+	Proxettes.list[c1.LocalAddr().String()+";"+target].dialer = c2
+	Proxettes.Unlock()
 }
 
-func DeleteFiles(wg *sync.WaitGroup) {
-	for _, socketPath := range unixSocketPaths {
-		if _, err := os.Stat(socketPath); err == nil {
-			os.Remove(socketPath)
-			wg.Done()
+func CleanUp() {
+	for k, p := range Proxettes.list {
+		fmt.Println("closing " + strings.Split(k, ";")[0])
+		p.listener.Close()
+		if p.dialer == nil {
+			fmt.Println("closing " + strings.Split(k, ";")[1])
+			p.dialer.Close()
 		}
 	}
 }
