@@ -59,13 +59,15 @@ func listen(listen string, dial string) {
 	defer Proxettes.Done()
 	fmt.Println("opening " + listen)
 	t1 := strings.Split(listen, ",")
+	p := new(proxet)
 	l, err := net.Listen(t1[0], t1[1])
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
+	p.listener = l
 	Proxettes.Lock()
-	Proxettes.list[listen+";"+dial].listener = l
+	Proxettes.list[listen+";"+dial] = p
 	Proxettes.Unlock()
 }
 func connect(c1 net.Conn, target string) {
