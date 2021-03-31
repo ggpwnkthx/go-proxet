@@ -54,7 +54,7 @@ func proxet(handle string) {
 		return
 	}
 	Relays.list[handle].l1 = &l1
-	for {
+	for Relays.list[handle] != nil {
 		c1, err := (*Relays.list[handle].l1).Accept()
 		Relays.list[handle].c1 = &c1
 		if err != nil {
@@ -84,7 +84,7 @@ func copy(writer *net.Conn, reader *net.Conn) {
 }
 
 func CleanUp() {
-	for _, r := range Relays.list {
+	for handle, r := range Relays.list {
 		if r.l1 != nil {
 			(*r.l1).Close()
 		}
@@ -94,5 +94,6 @@ func CleanUp() {
 		if r.c2 != nil {
 			(*r.c2).Close()
 		}
+		delete(Relays.list, handle)
 	}
 }
