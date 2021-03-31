@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 var unixSocketPaths []string
@@ -15,14 +16,12 @@ var unixSocketPaths []string
 func main() {
 	var wg sync.WaitGroup
 	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt)
-
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		select {
-		case sig := <-c:
-			fmt.Printf("Got %s signal. Aborting...\n", sig)
-			closeOut()
-		}
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		DeleteFiles(wg)
+		os.Exit(0)
 	}()
 
 	for i := 1; i < len(os.Args); i += 2 {
@@ -71,10 +70,11 @@ func connect(c1 net.Conn, target []string) {
 	io.Copy(c2, c1)
 }
 
-func closeOut() {
+func DeleteFiles(wg *sync.WaitGroup) {
 	for _, socketPath := range unixSocketPaths {
 		if _, err := os.Stat(socketPath); err == nil {
 			os.Remove(socketPath)
+			wg.Done()
 		}
 	}
 }
