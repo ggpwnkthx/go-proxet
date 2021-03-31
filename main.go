@@ -11,7 +11,6 @@ import (
 
 type relays struct {
 	sync.RWMutex
-	sync.WaitGroup
 	list map[string]*relay
 }
 
@@ -28,7 +27,9 @@ func main() {
 		list: map[string]*relay{},
 	}
 	for i := 1; i < len(os.Args); i += 2 {
-		Relays.list[os.Args[i]+";"+os.Args[i+1]] = &relay{}
+		handle := os.Args[i] + ";" + os.Args[i+1]
+		Relays.list[handle] = &relay{}
+		go proxet(handle)
 	}
 	for len(Relays.list) > 0 {
 		Relays.RLock()
@@ -53,27 +54,42 @@ func main() {
 	CleanUp()
 }
 func proxet(handle string) {
-	for {
-		c1, err := (*Relays.list[handle].l1).Accept()
-		Relays.Lock()
-		Relays.list[handle].c1 = &c1
-		Relays.Unlock()
+	if Relays.list[handle].l1 == nil {
+		targets := strings.Split(handle, ";")
+		t1 := strings.Split(targets[0], ",")
+		l1, err := net.Listen(t1[0], t1[1])
 		if err != nil {
-			continue
+			return
+		}
+		Relays.Lock()
+		Relays.list[handle].l1 = &l1
+		Relays.Unlock()
+	}
+	for {
+		if Relays.list[handle].c1 == nil {
+			Relays.Lock()
+			c1, err := (*Relays.list[handle].l1).Accept()
+			Relays.list[handle].c1 = &c1
+			Relays.Unlock()
+			if err != nil {
+				continue
+			}
 		}
 		go connect(handle)
 	}
 }
 func connect(handle string) {
-	targets := strings.Split(handle, ";")
-	t2 := strings.Split(targets[1], ",")
-	c2, err := net.Dial(t2[0], t2[1])
-	if err != nil {
-		return
+	if Relays.list[handle].c2 == nil {
+		targets := strings.Split(handle, ";")
+		t2 := strings.Split(targets[1], ",")
+		c2, err := net.Dial(t2[0], t2[1])
+		if err != nil {
+			return
+		}
+		Relays.Lock()
+		Relays.list[handle].c2 = &c2
+		Relays.Unlock()
 	}
-	Relays.Lock()
-	defer Relays.Unlock()
-	Relays.list[handle].c2 = &c2
 	go process(handle)
 }
 func process(handle string) {
