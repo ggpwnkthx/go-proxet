@@ -33,9 +33,11 @@ func main() {
 			targets := strings.Split(handle, ";")
 			t1 := strings.Split(targets[0], ",")
 			if r.c1 == nil {
+				fmt.Println("opening: " + t1[1])
 				l, err := net.Listen(t1[0], t1[1])
 				if err != nil {
-					return
+					delete(Relays.list, handle)
+					continue
 				}
 				for {
 					c1, err := l.Accept()
@@ -47,13 +49,10 @@ func main() {
 					}
 					go connect(targets[0], targets[1])
 				}
-			} else {
-				if r.c2 == nil {
-					fmt.Println("waiting for connection to " + (*r.c1).LocalAddr().String())
-				}
 			}
 		}
 	}
+	CleanUp()
 }
 
 func connect(listen string, dial string) {
@@ -72,4 +71,15 @@ func process(handle string) {
 	defer Relays.RUnlock()
 	go io.Copy((*Relays.list[handle].c1), (*Relays.list[handle].c2))
 	io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
+}
+
+func CleanUp() {
+	for _, r := range Relays.list {
+		if r.c1 != nil {
+			(*r.c1).Close()
+		}
+		if r.c2 != nil {
+			(*r.c2).Close()
+		}
+	}
 }
