@@ -16,6 +16,7 @@ type relays struct {
 }
 
 type relay struct {
+	l1 *net.Listener
 	c1 *net.Conn
 	c2 *net.Conn
 }
@@ -36,48 +37,47 @@ func main() {
 		for handle, r := range list {
 			targets := strings.Split(handle, ";")
 			t1 := strings.Split(targets[0], ",")
-			if r.c1 == nil {
-				Relays.Add(1)
+			if r.l1 == nil {
 				fmt.Println("opening: " + t1[1])
+				l, err := net.Listen(t1[0], t1[1])
+				if err != nil {
+					Relays.Lock()
+					delete(Relays.list, handle)
+					Relays.Unlock()
+					continue
+				} else {
+					r.l1 = &l
+				}
+			} else {
 				go proxet(handle)
-				Relays.Wait()
 			}
 		}
 	}
 	CleanUp()
 }
 func proxet(handle string) {
-	targets := strings.Split(handle, ";")
-	t1 := strings.Split(targets[0], ",")
-	l, err := net.Listen(t1[0], t1[1])
-	if err != nil {
-		Relays.Lock()
-		defer Relays.Unlock()
-		delete(Relays.list, handle)
-		return
-	}
 	for {
-		c1, err := l.Accept()
+		c1, err := (*Relays.list[handle].l1).Accept()
 		Relays.Lock()
 		Relays.list[handle].c1 = &c1
-		Relays.Done()
 		Relays.Unlock()
 		if err != nil {
 			continue
 		}
-		go connect(targets[0], targets[1])
+		go connect(handle)
 	}
 }
-func connect(listen string, dial string) {
-	t2 := strings.Split(dial, ",")
+func connect(handle string) {
+	targets := strings.Split(handle, ";")
+	t2 := strings.Split(targets[1], ",")
 	c2, err := net.Dial(t2[0], t2[1])
 	if err != nil {
 		return
 	}
 	Relays.Lock()
 	defer Relays.Unlock()
-	Relays.list[listen+";"+dial].c2 = &c2
-	go process(listen + ";" + dial)
+	Relays.list[handle].c2 = &c2
+	go process(handle)
 }
 func process(handle string) {
 	Relays.RLock()
