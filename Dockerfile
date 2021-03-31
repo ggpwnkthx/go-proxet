@@ -7,4 +7,4 @@ RUN go build -o /bin/proxet
 
 FROM alpine:3
 COPY --from=builder /bin/proxet /bin/proxet
-CMD [ "/bin/proxet" ]
+ENTRYPOINT [ "/bin/proxet" ]
