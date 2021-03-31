@@ -6,19 +6,20 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 )
 
 func main() {
-	for _, a := range os.Args {
-		fmt.Println(a)
-	}
+	var wg sync.WaitGroup
 	for i := 0; i < len(os.Args); i += 2 {
+		wg.Add(1)
 		t1 := strings.Split(os.Args[i], ",")
 		t2 := strings.Split(os.Args[1+1], ",")
-		go handle(t1, t2)
+		go handle(t1, t2, &wg)
 	}
+	wg.Wait()
 }
-func handle(listen []string, dial []string) {
+func handle(listen []string, dial []string, wg *sync.WaitGroup) {
 	for {
 		fmt.Println("starting listener of type " + listen[0] + " at " + listen[1])
 		l, err := net.Listen(listen[0], listen[1])
@@ -33,12 +34,13 @@ func handle(listen []string, dial []string) {
 				continue
 			}
 			fmt.Println("starting dialer of type " + dial[0] + " at " + dial[1])
-			go connect(c1, dial)
+			go connect(c1, dial, wg)
 		}
 	}
 }
-func connect(c1 net.Conn, target []string) {
+func connect(c1 net.Conn, target []string, wg *sync.WaitGroup) {
 	defer c1.Close()
+	defer wg.Done()
 	c2, err := net.Dial(target[0], target[1])
 	if err != nil {
 		fmt.Println(err.Error())
