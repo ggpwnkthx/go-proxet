@@ -37,7 +37,7 @@ func main() {
 	// Parse args
 	for i := 1; i < len(os.Args); i += 2 {
 		Proxettes.Add(1)
-		go listen(os.Args[i], os.Args[i+1])
+		go initProxet(os.Args[i] + ";" + os.Args[i+1])
 	}
 	Proxettes.Wait()
 	for len(Proxettes.list) > 0 {
@@ -55,10 +55,10 @@ func main() {
 	}
 	CleanUp()
 }
-func listen(listen string, dial string) {
+func initProxet(handle string) {
 	defer Proxettes.Done()
-	fmt.Println("opening " + listen)
-	t1 := strings.Split(listen, ",")
+	fmt.Println("initializing " + handle)
+	t1 := strings.Split(strings.Split(handle, ";")[0], ",")
 	p := new(proxet)
 	l, err := net.Listen(t1[0], t1[1])
 	if err != nil {
@@ -67,19 +67,21 @@ func listen(listen string, dial string) {
 	}
 	p.listener = &l
 	Proxettes.Lock()
-	Proxettes.list[listen+";"+dial] = p
+	Proxettes.list[handle] = p
 	Proxettes.Unlock()
 }
-func connect(c1 net.Conn, target string) {
-	fmt.Println("opening " + target + " and relaying it to " + c1.LocalAddr().Network() + "," + c1.LocalAddr().String())
-	t2 := strings.Split(target, ",")
+func connect(c1 net.Conn, dial string) {
+	listen := c1.LocalAddr().Network() + "," + c1.LocalAddr().String()
+	handle := listen + ";" + dial
+	fmt.Println("opening " + handle)
+	t2 := strings.Split(dial, ",")
 	c2, err := net.Dial(t2[0], t2[1])
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	Proxettes.Lock()
-	Proxettes.list[c1.LocalAddr().Network()+","+c1.LocalAddr().String()+";"+target].dialer = &c2
+	Proxettes.list[handle].dialer = &c2
 	Proxettes.Unlock()
 }
 
