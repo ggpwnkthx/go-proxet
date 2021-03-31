@@ -14,7 +14,13 @@ func main() {
 	for i := 1; i < len(os.Args); i += 2 {
 		wg.Add(1)
 		t1 := strings.Split(os.Args[i], ",")
+		if t1[0] == "unix" {
+			defer os.Remove(t1[1])
+		}
 		t2 := strings.Split(os.Args[1+1], ",")
+		if t2[0] == "unix" {
+			defer os.Remove(t2[1])
+		}
 		go handle(t1, t2, &wg)
 	}
 	wg.Wait()
@@ -45,6 +51,7 @@ func connect(c1 net.Conn, target []string, wg *sync.WaitGroup) {
 	c2, err := net.Dial(target[0], target[1])
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	go io.Copy(c1, c2)
 	io.Copy(c2, c1)
