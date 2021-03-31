@@ -35,6 +35,7 @@ func main() {
 func Proxet(listen string, dial string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	t1 := strings.Split(listen, ",")
+	Relays.list[listen+";"+dial] = &relay{}
 	for {
 		l, err := net.Listen(t1[0], t1[1])
 		if err != nil {
