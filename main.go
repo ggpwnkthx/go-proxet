@@ -11,6 +11,7 @@ import (
 
 type relays struct {
 	sync.RWMutex
+	sync.WaitGroup
 	list map[string]*relay
 }
 
@@ -36,8 +37,10 @@ func main() {
 			targets := strings.Split(handle, ";")
 			t1 := strings.Split(targets[0], ",")
 			if r.c1 == nil {
+				Relays.Add(1)
 				fmt.Println("opening: " + t1[1])
 				go proxet(handle)
+				Relays.Wait()
 			}
 		}
 	}
@@ -57,6 +60,7 @@ func proxet(handle string) {
 		c1, err := l.Accept()
 		Relays.Lock()
 		Relays.list[handle].c1 = &c1
+		Relays.Done()
 		Relays.Unlock()
 		if err != nil {
 			continue
