@@ -10,6 +10,7 @@ import (
 
 type relays struct {
 	sync.Mutex
+	sync.WaitGroup
 	list map[string]*relay
 }
 
@@ -24,16 +25,15 @@ func main() {
 	Relays = relays{
 		list: map[string]*relay{},
 	}
-	wg := sync.WaitGroup{}
 	for i := 1; i < len(os.Args); i += 2 {
-		wg.Add(1)
-		go Proxet(os.Args[i], os.Args[i+1], &wg)
+		Relays.Add(1)
+		go Proxet(os.Args[i], os.Args[i+1])
 	}
-	wg.Wait()
+	Relays.Wait()
 }
 
-func Proxet(listen string, dial string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func Proxet(listen string, dial string) {
+	defer Relays.Done()
 	t1 := strings.Split(listen, ",")
 	Relays.list[listen+";"+dial] = &relay{}
 	for {
