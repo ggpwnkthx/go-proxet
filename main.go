@@ -11,7 +11,6 @@ import (
 
 type relays struct {
 	sync.RWMutex
-	sync.WaitGroup
 	list map[string]*relay
 }
 
@@ -27,48 +26,36 @@ func main() {
 		list: map[string]*relay{},
 	}
 	for i := 1; i < len(os.Args); i += 2 {
-		Relays.Lock()
-		Relays.Add(1)
-		Relays.Unlock()
-		go Proxet(os.Args[i], os.Args[i+1])
+		Relays.list[os.Args[i]+";"+os.Args[i+1]] = &relay{}
 	}
-	Relays.Wait()
 	for len(Relays.list) > 0 {
-		for _, r := range Relays.list {
-			if r.c1 != nil {
+		for handle, r := range Relays.list {
+			targets := strings.Split(handle, ";")
+			t1 := strings.Split(targets[0], ",")
+			if r.c1 == nil {
+				l, err := net.Listen(t1[0], t1[1])
+				if err != nil {
+					return
+				}
+				for {
+					c1, err := l.Accept()
+					Relays.Lock()
+					Relays.list[handle].c1 = &c1
+					Relays.Unlock()
+					if err != nil {
+						continue
+					}
+					go connect(targets[0], targets[1])
+				}
+			} else {
 				if r.c2 == nil {
 					fmt.Println("waiting for connection to " + (*r.c1).LocalAddr().String())
-				} else {
-					fmt.Println("relaying " + (*r.c1).LocalAddr().String() + " to " + (*r.c2).LocalAddr().String())
 				}
 			}
 		}
 	}
 }
 
-func Proxet(listen string, dial string) {
-	t1 := strings.Split(listen, ",")
-	Relays.Lock()
-	Relays.list[listen+";"+dial] = &relay{}
-	Relays.Done()
-	Relays.Unlock()
-	for {
-		l, err := net.Listen(t1[0], t1[1])
-		if err != nil {
-			return
-		}
-		for {
-			c1, err := l.Accept()
-			Relays.Lock()
-			Relays.list[listen+";"+dial].c1 = &c1
-			Relays.Unlock()
-			if err != nil {
-				continue
-			}
-			go connect(listen, dial)
-		}
-	}
-}
 func connect(listen string, dial string) {
 	t2 := strings.Split(dial, ",")
 	c2, err := net.Dial(t2[0], t2[1])
@@ -76,8 +63,8 @@ func connect(listen string, dial string) {
 		return
 	}
 	Relays.Lock()
+	defer Relays.Unlock()
 	Relays.list[listen+";"+dial].c2 = &c2
-	Relays.Unlock()
 	go process(listen + ";" + dial)
 }
 func process(handle string) {
