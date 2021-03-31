@@ -29,10 +29,13 @@ func main() {
 		Relays.list[os.Args[i]+";"+os.Args[i+1]] = &relay{}
 	}
 	for len(Relays.list) > 0 {
-		for handle, r := range Relays.list {
+		Relays.RLock()
+		list := Relays.list
+		Relays.RUnlock()
+		for handle, r := range list {
 			targets := strings.Split(handle, ";")
 			t1 := strings.Split(targets[0], ",")
-			if r.c1 == nil {
+			if *r.c1 == nil {
 				fmt.Println("opening: " + t1[1])
 				go proxet(handle)
 			}
@@ -45,6 +48,8 @@ func proxet(handle string) {
 	t1 := strings.Split(targets[0], ",")
 	l, err := net.Listen(t1[0], t1[1])
 	if err != nil {
+		Relays.Lock()
+		defer Relays.Unlock()
 		delete(Relays.list, handle)
 		return
 	}
