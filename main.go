@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -30,6 +31,15 @@ func main() {
 		go Proxet(os.Args[i], os.Args[i+1])
 	}
 	Relays.Wait()
+	for len(Relays.list) > 0 {
+		for _, r := range Relays.list {
+			if r.c2 == nil {
+				fmt.Println("waiting for connection to " + (*r.c1).LocalAddr().String())
+			} else {
+				fmt.Println("relaying " + (*r.c1).LocalAddr().String() + " to " + (*r.c2).LocalAddr().String())
+			}
+		}
+	}
 }
 
 func Proxet(listen string, dial string) {
