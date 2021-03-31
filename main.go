@@ -37,7 +37,7 @@ func main() {
 	// Parse args
 	for i := 1; i < len(os.Args); i += 2 {
 		Proxettes.Add(1)
-		go listen(os.Args[i], os.Args[1+1])
+		go listen(os.Args[i], os.Args[i+1])
 	}
 	Proxettes.Wait()
 	for len(Proxettes.list) > 0 {
