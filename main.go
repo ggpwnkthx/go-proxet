@@ -26,6 +26,7 @@ func main() {
 	wg.Wait()
 }
 func handle(listen []string, dial []string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		fmt.Println("starting listener of type " + listen[0] + " at " + listen[1])
 		l, err := net.Listen(listen[0], listen[1])
@@ -44,9 +45,7 @@ func handle(listen []string, dial []string, wg *sync.WaitGroup) {
 		}
 	}
 }
-func connect(c1 net.Conn, target []string, wg *sync.WaitGroup) {
-	defer c1.Close()
-	defer wg.Done()
+func connect(c1 net.Conn, target []string) {
 	c2, err := net.Dial(target[0], target[1])
 	if err != nil {
 		fmt.Println(err.Error())
