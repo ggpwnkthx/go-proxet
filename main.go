@@ -27,21 +27,17 @@ func main() {
 	for i := 1; i < len(os.Args); i += 2 {
 		wg.Add(1)
 		t1 := strings.Split(os.Args[i], ",")
-		if t1[0] == "unix" {
-			defer os.Remove(t1[1])
-			unixSocketPaths = append(unixSocketPaths, t1[1])
-		}
 		t2 := strings.Split(os.Args[1+1], ",")
-		if t2[0] == "unix" {
-			defer os.Remove(t2[1])
-			unixSocketPaths = append(unixSocketPaths, t1[1])
-		}
 		go handle(t1, t2, &wg)
 	}
 	wg.Wait()
 }
 func handle(listen []string, dial []string, wg *sync.WaitGroup) {
 	defer wg.Done()
+	if listen[0] == "unix" {
+		defer os.Remove(listen[1])
+		unixSocketPaths = append(unixSocketPaths, listen[1])
+	}
 	for {
 		fmt.Println("starting listener of type " + listen[0] + " at " + listen[1])
 		l, err := net.Listen(listen[0], listen[1])
@@ -61,6 +57,10 @@ func handle(listen []string, dial []string, wg *sync.WaitGroup) {
 	}
 }
 func connect(c1 net.Conn, target []string) {
+	if target[0] == "unix" {
+		defer os.Remove(target[1])
+		unixSocketPaths = append(unixSocketPaths, target[1])
+	}
 	c2, err := net.Dial(target[0], target[1])
 	if err != nil {
 		fmt.Println(err.Error())
