@@ -34,27 +34,31 @@ func main() {
 			t1 := strings.Split(targets[0], ",")
 			if r.c1 == nil {
 				fmt.Println("opening: " + t1[1])
-				l, err := net.Listen(t1[0], t1[1])
-				if err != nil {
-					delete(Relays.list, handle)
-					continue
-				}
-				for {
-					c1, err := l.Accept()
-					Relays.Lock()
-					Relays.list[handle].c1 = &c1
-					Relays.Unlock()
-					if err != nil {
-						continue
-					}
-					go connect(targets[0], targets[1])
-				}
+				go proxet(handle)
 			}
 		}
 	}
 	CleanUp()
 }
-
+func proxet(handle string) {
+	targets := strings.Split(handle, ";")
+	t1 := strings.Split(targets[0], ",")
+	l, err := net.Listen(t1[0], t1[1])
+	if err != nil {
+		delete(Relays.list, handle)
+		return
+	}
+	for {
+		c1, err := l.Accept()
+		Relays.Lock()
+		Relays.list[handle].c1 = &c1
+		Relays.Unlock()
+		if err != nil {
+			continue
+		}
+		go connect(targets[0], targets[1])
+	}
+}
 func connect(listen string, dial string) {
 	t2 := strings.Split(dial, ",")
 	c2, err := net.Dial(t2[0], t2[1])
