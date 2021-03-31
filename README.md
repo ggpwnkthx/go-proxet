@@ -1,5 +1,5 @@
 # go-proxet
- Very simple golang socket proxy
+A very simple, multi-threaded, IO proxy/relay written in GoLang.
 # Usage
 Each argument begins with a named network, which is immediately followed by a comma, and ends with a path or address. An example of a single argument is below.
 ```
@@ -23,4 +23,15 @@ The supported named networks are as follows:
  * ```ip6``` (IPv6-only)
  * ```unix```
  * ```unixgram```
- * ```unixpacket```
+ * ```unixpacket``` 
+## Best if used via Docker
+Docker run example:
+```
+SOCK_PATH=/path/to/unix/sockets
+docker run \
+    --network overlay_network_name \
+    -v $SOCK_PATH:$SOCK_PATH \
+    ggpwnkthx/go-proxet:latest \
+        unix,$SOCK_PATH/http.sock tcp,container_alias:80 \
+        unix,$SOCK_PATH/https.sock tcp,container_alias:443
+```
