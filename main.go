@@ -20,7 +20,7 @@ func main() {
 	go func() {
 		<-c
 		fmt.Println("\r- Ctrl+C pressed in Terminal")
-		DeleteFiles(wg)
+		DeleteFiles(&wg)
 		os.Exit(0)
 	}()
 
