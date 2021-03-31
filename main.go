@@ -5,7 +5,9 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 type relays struct {
@@ -31,6 +33,15 @@ func main() {
 		fmt.Println("init: " + handle)
 		go proxet(handle)
 	}
+	// Cancellation Context
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		CleanUp()
+		os.Exit(0)
+	}()
 	for len(Relays.list) > 0 {
 	}
 }
