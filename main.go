@@ -5,21 +5,37 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
 )
 
+var unixSocketPaths []string
+
 func main() {
 	var wg sync.WaitGroup
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+
+	go func() {
+		select {
+		case sig := <-c:
+			fmt.Printf("Got %s signal. Aborting...\n", sig)
+			closeOut()
+		}
+	}()
+
 	for i := 1; i < len(os.Args); i += 2 {
 		wg.Add(1)
 		t1 := strings.Split(os.Args[i], ",")
 		if t1[0] == "unix" {
 			defer os.Remove(t1[1])
+			unixSocketPaths = append(unixSocketPaths, t1[1])
 		}
 		t2 := strings.Split(os.Args[1+1], ",")
 		if t2[0] == "unix" {
 			defer os.Remove(t2[1])
+			unixSocketPaths = append(unixSocketPaths, t1[1])
 		}
 		go handle(t1, t2, &wg)
 	}
@@ -53,4 +69,12 @@ func connect(c1 net.Conn, target []string) {
 	}
 	go io.Copy(c1, c2)
 	io.Copy(c2, c1)
+}
+
+func closeOut() {
+	for _, socketPath := range unixSocketPaths {
+		if _, err := os.Stat(socketPath); err == nil {
+			os.Remove(socketPath)
+		}
+	}
 }
