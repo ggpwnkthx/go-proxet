@@ -11,7 +11,7 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	for i := 0; i < len(os.Args); i += 2 {
+	for i := 1; i < len(os.Args); i += 2 {
 		wg.Add(1)
 		t1 := strings.Split(os.Args[i], ",")
 		t2 := strings.Split(os.Args[1+1], ",")
