@@ -57,6 +57,10 @@ func connect(listen string, dial string) {
 	if err != nil {
 		return
 	}
-	go io.Copy((*Relays.list[listen+";"+dial].c1), c2)
-	io.Copy(c2, (*Relays.list[listen+";"+dial].c1))
+	Relays.list[listen+";"+dial].c2 = &c2
+	go process(listen + ";" + dial)
+}
+func process(handle string) {
+	go io.Copy((*Relays.list[handle].c1), (*Relays.list[handle].c2))
+	io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
 }
