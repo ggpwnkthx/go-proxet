@@ -88,11 +88,11 @@ func connect(c1 net.Conn, dial string) {
 }
 
 func CleanUp() {
-	for k, p := range Proxettes.list {
-		fmt.Println("closing " + strings.Split(k, ";")[0])
+	for _, p := range Proxettes.list {
+		fmt.Println("closing " + (*p.listener).LocalAddr().Network() + "," + (*p.listener).LocalAddr().String())
 		(*p.listener).Close()
-		if p.dialer == nil {
-			fmt.Println("closing " + strings.Split(k, ";")[1])
+		if p.dialer != nil {
+			fmt.Println("closing " + (*p.dialer).LocalAddr().Network() + "," + (*p.dialer).LocalAddr().String())
 			(*p.dialer).Close()
 		}
 	}
