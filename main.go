@@ -9,7 +9,7 @@ import (
 )
 
 type relays struct {
-	sync.Mutex
+	sync.RWMutex
 	sync.WaitGroup
 	list map[string]*relay
 }
@@ -35,7 +35,9 @@ func main() {
 func Proxet(listen string, dial string) {
 	defer Relays.Done()
 	t1 := strings.Split(listen, ",")
+	Relays.Lock()
 	Relays.list[listen+";"+dial] = &relay{}
+	Relays.Unlock()
 	for {
 		l, err := net.Listen(t1[0], t1[1])
 		if err != nil {
@@ -43,7 +45,9 @@ func Proxet(listen string, dial string) {
 		}
 		for {
 			c1, err := l.Accept()
+			Relays.Lock()
 			Relays.list[listen+";"+dial].c1 = &c1
+			Relays.Unlock()
 			if err != nil {
 				continue
 			}
@@ -57,10 +61,14 @@ func connect(listen string, dial string) {
 	if err != nil {
 		return
 	}
+	Relays.Lock()
 	Relays.list[listen+";"+dial].c2 = &c2
+	Relays.Unlock()
 	go process(listen + ";" + dial)
 }
 func process(handle string) {
+	Relays.RLock()
+	defer Relays.RUnlock()
 	go io.Copy((*Relays.list[handle].c1), (*Relays.list[handle].c2))
 	io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
 }
