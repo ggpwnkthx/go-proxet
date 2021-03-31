@@ -17,27 +17,30 @@ func main() {
 		}
 	}
 }
-func handle(t1 []string, t2 []string) {
+func handle(listen []string, dial []string) {
 	for {
-		fmt.Println("starting listener of type " + t1[0] + " at " + t1[1])
-		l, _ := net.Listen(t1[0], t1[1])
+		fmt.Println("starting listener of type " + listen[0] + " at " + listen[1])
+		l, err := net.Listen(listen[0], listen[1])
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 		for {
 			c1, err := l.Accept()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, err.Error())
+				fmt.Println(err.Error())
 				continue
 			}
-			fmt.Println("starting dialer of type " + t2[0] + " at " + t2[1])
-			go connect(c1, t2)
+			fmt.Println("starting dialer of type " + dial[0] + " at " + dial[1])
+			go connect(c1, dial)
 		}
 	}
 }
-
 func connect(c1 net.Conn, target []string) {
 	defer c1.Close()
 	c2, err := net.Dial(target[0], target[1])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Println(err.Error())
 	}
 	go io.Copy(c1, c2)
 	io.Copy(c2, c1)
