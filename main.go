@@ -12,8 +12,8 @@ import (
 )
 
 type proxet struct {
-	listener *net.Conn
-	dialer   *net.Conn
+	listener net.Conn
+	dialer   net.Conn
 }
 
 var Proxettes = struct {
@@ -40,11 +40,14 @@ func main() {
 		Proxettes.Add(1)
 		go initProxet(os.Args[i] + ";" + os.Args[i+1])
 	}
+	// Wait until proxettes are initialized
 	Proxettes.Wait()
 	for len(Proxettes.list) > 0 {
 		for k, p := range Proxettes.list {
 			if p.dialer == nil {
-				go connect(*p.listener, strings.Split(k, ";")[1])
+				go connect(p.listener, strings.Split(k, ";")[1])
+			} else {
+				go relay(p)
 			}
 		}
 	}
@@ -65,7 +68,7 @@ func initProxet(handle string) {
 		fmt.Println(err.Error())
 		return
 	}
-	p.listener = &c1
+	p.listener = c1
 	Proxettes.Lock()
 	Proxettes.list[handle] = p
 	Proxettes.Unlock()
@@ -81,19 +84,21 @@ func connect(c1 net.Conn, dial string) {
 		return
 	}
 	Proxettes.Lock()
-	Proxettes.list[handle].dialer = &c2
+	Proxettes.list[handle].dialer = c2
 	Proxettes.Unlock()
-	go io.Copy(c1, c2)
-	io.Copy(c2, c1)
+}
+func relay(proxet *proxet) {
+	go io.Copy(proxet.listener, proxet.dialer)
+	io.Copy(proxet.dialer, proxet.listener)
 }
 
 func CleanUp() {
 	for _, p := range Proxettes.list {
-		fmt.Println("closing " + (*p.listener).LocalAddr().Network() + "," + (*p.listener).LocalAddr().String())
-		(*p.listener).Close()
+		fmt.Println("closing " + p.listener.LocalAddr().Network() + "," + p.listener.LocalAddr().String())
+		p.listener.Close()
 		if p.dialer != nil {
-			fmt.Println("closing " + (*p.dialer).LocalAddr().Network() + "," + (*p.dialer).LocalAddr().String())
-			(*p.dialer).Close()
+			fmt.Println("closing " + p.dialer.LocalAddr().Network() + "," + p.dialer.LocalAddr().String())
+			p.dialer.Close()
 		}
 	}
 }
