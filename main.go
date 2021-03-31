@@ -35,7 +35,7 @@ func main() {
 		for handle, r := range list {
 			targets := strings.Split(handle, ";")
 			t1 := strings.Split(targets[0], ",")
-			if *r.c1 == nil {
+			if r.c1 == nil {
 				fmt.Println("opening: " + t1[1])
 				go proxet(handle)
 			}
