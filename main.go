@@ -27,7 +27,9 @@ func main() {
 		list: map[string]*relay{},
 	}
 	for i := 1; i < len(os.Args); i += 2 {
+		Relays.Lock()
 		Relays.Add(1)
+		Relays.Unlock()
 		go Proxet(os.Args[i], os.Args[i+1])
 	}
 	Relays.Wait()
@@ -43,10 +45,10 @@ func main() {
 }
 
 func Proxet(listen string, dial string) {
-	defer Relays.Done()
 	t1 := strings.Split(listen, ",")
 	Relays.Lock()
 	Relays.list[listen+";"+dial] = &relay{}
+	Relays.Done()
 	Relays.Unlock()
 	for {
 		l, err := net.Listen(t1[0], t1[1])
