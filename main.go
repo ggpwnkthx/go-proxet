@@ -71,7 +71,7 @@ func listen(listen string, dial string) {
 	Proxettes.Unlock()
 }
 func connect(c1 net.Conn, target string) {
-	fmt.Println("opening " + target + " and relaying it to " + c1.LocalAddr().String())
+	fmt.Println("opening " + target + " and relaying it to " + c1.LocalAddr().Network() + "," + c1.LocalAddr().String())
 	t2 := strings.Split(target, ",")
 	c2, err := net.Dial(t2[0], t2[1])
 	if err != nil {
@@ -79,7 +79,7 @@ func connect(c1 net.Conn, target string) {
 		return
 	}
 	Proxettes.Lock()
-	Proxettes.list[c1.LocalAddr().String()+";"+target].dialer = &c2
+	Proxettes.list[c1.LocalAddr().Network()+","+c1.LocalAddr().String()+";"+target].dialer = &c2
 	Proxettes.Unlock()
 }
 
