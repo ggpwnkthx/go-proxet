@@ -41,9 +41,6 @@ func main() {
 				fmt.Println("opening: " + t1[1])
 				l, err := net.Listen(t1[0], t1[1])
 				if err != nil {
-					Relays.Lock()
-					delete(Relays.list, handle)
-					Relays.Unlock()
 					continue
 				} else {
 					r.l1 = &l
