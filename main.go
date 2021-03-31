@@ -6,11 +6,9 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
 )
 
 type relays struct {
-	sync.RWMutex
 	list map[string]*relay
 }
 
@@ -32,10 +30,7 @@ func main() {
 		go proxet(handle)
 	}
 	for len(Relays.list) > 0 {
-		Relays.RLock()
-		list := Relays.list
-		Relays.RUnlock()
-		for handle, r := range list {
+		for handle, r := range Relays.list {
 			targets := strings.Split(handle, ";")
 			t1 := strings.Split(targets[0], ",")
 			if r.l1 == nil {
@@ -43,10 +38,8 @@ func main() {
 				l, err := net.Listen(t1[0], t1[1])
 				if err != nil {
 					continue
-				} else {
-					r.l1 = &l
 				}
-			} else {
+				r.l1 = &l
 				go proxet(handle)
 			}
 		}
@@ -61,16 +54,12 @@ func proxet(handle string) {
 		if err != nil {
 			return
 		}
-		Relays.Lock()
 		Relays.list[handle].l1 = &l1
-		Relays.Unlock()
 	}
 	for {
 		if Relays.list[handle].c1 == nil {
-			Relays.Lock()
 			c1, err := (*Relays.list[handle].l1).Accept()
 			Relays.list[handle].c1 = &c1
-			Relays.Unlock()
 			if err != nil {
 				continue
 			}
@@ -86,15 +75,11 @@ func connect(handle string) {
 		if err != nil {
 			return
 		}
-		Relays.Lock()
 		Relays.list[handle].c2 = &c2
-		Relays.Unlock()
 	}
 	go process(handle)
 }
 func process(handle string) {
-	Relays.RLock()
-	defer Relays.RUnlock()
 	go io.Copy((*Relays.list[handle].c1), (*Relays.list[handle].c2))
 	io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
 }
