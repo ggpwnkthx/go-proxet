@@ -64,13 +64,13 @@ func connect(handle string) {
 		}
 		Relays.list[handle].c2 = &c2
 	}
-	go process(handle)
+	go copy(Relays.list[handle].c1, Relays.list[handle].c2)
+	copy(Relays.list[handle].c2, Relays.list[handle].c1)
 }
-func process(handle string) {
-	go io.Copy((*Relays.list[handle].c1), (*Relays.list[handle].c2))
-	_, err := io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
+func copy(src *net.Conn, dst *net.Conn) {
+	_, err := io.Copy(*src, *dst)
 	if err != nil {
-		fmt.Println(handle + ": " + err.Error())
+		fmt.Println(err.Error())
 	}
 }
 
