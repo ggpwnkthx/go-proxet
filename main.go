@@ -41,7 +41,7 @@ func handle(listen []string, dial []string, wg *sync.WaitGroup) {
 				continue
 			}
 			fmt.Println("starting dialer of type " + dial[0] + " at " + dial[1])
-			go connect(c1, dial, wg)
+			go connect(c1, dial)
 		}
 	}
 }
