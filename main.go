@@ -45,8 +45,6 @@ func main() {
 		for k, p := range Proxettes.list {
 			if p.dialer == nil {
 				go connect(*p.listener, strings.Split(k, ";")[1])
-			} else {
-				go relay(p)
 			}
 		}
 	}
@@ -85,10 +83,8 @@ func connect(c1 net.Conn, dial string) {
 	Proxettes.Lock()
 	Proxettes.list[handle].dialer = &c2
 	Proxettes.Unlock()
-}
-func relay(proxet *proxet) {
-	go io.Copy(*proxet.listener, *proxet.dialer)
-	io.Copy(*proxet.dialer, *proxet.listener)
+	go io.Copy(c1, c2)
+	io.Copy(c2, c1)
 }
 
 func CleanUp() {
