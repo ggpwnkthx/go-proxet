@@ -11,8 +11,8 @@ import (
 )
 
 type proxet struct {
-	listener net.Listener
-	dialer   net.Conn
+	listener *net.Listener
+	dialer   *net.Conn
 }
 
 var Proxettes = struct {
@@ -43,7 +43,7 @@ func main() {
 	for len(Proxettes.list) > 0 {
 		for k, p := range Proxettes.list {
 			if p.dialer == nil {
-				c1, err := p.listener.Accept()
+				c1, err := (*p.listener).Accept()
 				if err != nil {
 					fmt.Println(err.Error())
 					continue
@@ -65,7 +65,7 @@ func listen(listen string, dial string) {
 		fmt.Println(err.Error())
 		return
 	}
-	p.listener = l
+	p.listener = &l
 	Proxettes.Lock()
 	Proxettes.list[listen+";"+dial] = p
 	Proxettes.Unlock()
@@ -79,17 +79,17 @@ func connect(c1 net.Conn, target string) {
 		return
 	}
 	Proxettes.Lock()
-	Proxettes.list[c1.LocalAddr().String()+";"+target].dialer = c2
+	Proxettes.list[c1.LocalAddr().String()+";"+target].dialer = &c2
 	Proxettes.Unlock()
 }
 
 func CleanUp() {
 	for k, p := range Proxettes.list {
 		fmt.Println("closing " + strings.Split(k, ";")[0])
-		p.listener.Close()
+		(*p.listener).Close()
 		if p.dialer == nil {
 			fmt.Println("closing " + strings.Split(k, ";")[1])
-			p.dialer.Close()
+			(*p.dialer).Close()
 		}
 	}
 }
