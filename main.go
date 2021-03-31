@@ -30,19 +30,6 @@ func main() {
 		go proxet(handle)
 	}
 	for len(Relays.list) > 0 {
-		for handle, r := range Relays.list {
-			targets := strings.Split(handle, ";")
-			t1 := strings.Split(targets[0], ",")
-			if r.l1 == nil {
-				fmt.Println("opening: " + t1[1])
-				l, err := net.Listen(t1[0], t1[1])
-				if err != nil {
-					continue
-				}
-				r.l1 = &l
-				go proxet(handle)
-			}
-		}
 	}
 	CleanUp()
 }
@@ -81,7 +68,10 @@ func connect(handle string) {
 }
 func process(handle string) {
 	go io.Copy((*Relays.list[handle].c1), (*Relays.list[handle].c2))
-	io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
+	_, err := io.Copy((*Relays.list[handle].c2), (*Relays.list[handle].c1))
+	if err != nil {
+		fmt.Println(handle + ": " + err.Error())
+	}
 }
 
 func CleanUp() {
