@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -11,7 +12,7 @@ import (
 )
 
 type proxet struct {
-	listener *net.Listener
+	listener *net.Conn
 	dialer   *net.Conn
 }
 
@@ -43,13 +44,9 @@ func main() {
 	for len(Proxettes.list) > 0 {
 		for k, p := range Proxettes.list {
 			if p.dialer == nil {
-				c1, err := (*p.listener).Accept()
-				if err != nil {
-					fmt.Println(err.Error())
-					continue
-				}
-				dial := strings.Split(k, ";")[1]
-				go connect(c1, dial)
+				go connect(*p.listener, strings.Split(k, ";")[1])
+			} else {
+				go relay(p)
 			}
 		}
 	}
@@ -65,7 +62,12 @@ func initProxet(handle string) {
 		fmt.Println(err.Error())
 		return
 	}
-	p.listener = &l
+	c1, err := l.Accept()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	p.listener = &c1
 	Proxettes.Lock()
 	Proxettes.list[handle] = p
 	Proxettes.Unlock()
@@ -83,6 +85,10 @@ func connect(c1 net.Conn, dial string) {
 	Proxettes.Lock()
 	Proxettes.list[handle].dialer = &c2
 	Proxettes.Unlock()
+}
+func relay(proxet *proxet) {
+	go io.Copy(*proxet.listener, *proxet.dialer)
+	io.Copy(*proxet.dialer, *proxet.listener)
 }
 
 func CleanUp() {
