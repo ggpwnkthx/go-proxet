@@ -24,14 +24,15 @@ func main() {
 	Relays = relays{
 		list: map[string]*relay{},
 	}
+	defer CleanUp()
 	for i := 1; i < len(os.Args); i += 2 {
 		handle := os.Args[i] + ";" + os.Args[i+1]
 		Relays.list[handle] = &relay{}
+		fmt.Println("init: " + handle)
 		go proxet(handle)
 	}
 	for len(Relays.list) > 0 {
 	}
-	CleanUp()
 }
 func proxet(handle string) {
 	targets := strings.Split(handle, ";")
@@ -49,10 +50,10 @@ func proxet(handle string) {
 			fmt.Println(err.Error())
 			continue
 		}
-		go connect(handle)
+		go handler(handle)
 	}
 }
-func connect(handle string) {
+func handler(handle string) {
 	targets := strings.Split(handle, ";")
 	t2 := strings.Split(targets[1], ",")
 	c2, err := net.Dial(t2[0], t2[1])
@@ -61,11 +62,11 @@ func connect(handle string) {
 		return
 	}
 	Relays.list[handle].c2 = &c2
-	go copy(Relays.list[handle].c1, Relays.list[handle].c2)
-	copy(Relays.list[handle].c2, Relays.list[handle].c1)
+	go copy(Relays.list[handle].c1, Relays.list[handle].c2) // c1 -> c2
+	copy(Relays.list[handle].c2, Relays.list[handle].c1)    // c2 -> c1
 }
-func copy(src *net.Conn, dst *net.Conn) {
-	_, err := io.Copy(*src, *dst)
+func copy(writer *net.Conn, reader *net.Conn) {
+	_, err := io.Copy(*writer, *reader)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -73,6 +74,9 @@ func copy(src *net.Conn, dst *net.Conn) {
 
 func CleanUp() {
 	for _, r := range Relays.list {
+		if r.l1 != nil {
+			(*r.l1).Close()
+		}
 		if r.c1 != nil {
 			(*r.c1).Close()
 		}
