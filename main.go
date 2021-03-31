@@ -54,7 +54,10 @@ func proxet(handle string) {
 		return
 	}
 	Relays.list[handle].l1 = &l1
-	for Relays.list[handle] != nil {
+	for {
+		if Relays.list[handle] == nil {
+			break
+		}
 		c1, err := (*Relays.list[handle].l1).Accept()
 		Relays.list[handle].c1 = &c1
 		if err != nil {
@@ -89,7 +92,7 @@ func CleanUp() {
 			(*r.l1).Close()
 		}
 		if r.c1 != nil {
-			(*r.c1).Close()
+			//(*r.c1).Close()
 		}
 		if r.c2 != nil {
 			(*r.c2).Close()
