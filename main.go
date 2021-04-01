@@ -7,10 +7,12 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 )
 
 type relays struct {
+	sync.WaitGroup
 	list map[string]*relay
 }
 
@@ -29,6 +31,7 @@ func main() {
 	defer CleanUp()
 	for i := 1; i < len(os.Args); i += 2 {
 		handle := os.Args[i] + ";" + os.Args[i+1]
+		Relays.Add(1)
 		Relays.list[handle] = &relay{}
 		fmt.Println("init: " + handle)
 		go proxet(handle)
@@ -42,8 +45,7 @@ func main() {
 		CleanUp()
 		os.Exit(0)
 	}()
-	for len(Relays.list) > 0 {
-	}
+	Relays.Wait()
 }
 func proxet(handle string) {
 	targets := strings.Split(handle, ";")
