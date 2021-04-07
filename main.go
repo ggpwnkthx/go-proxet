@@ -29,9 +29,9 @@ func main() {
 		list: map[string]*relay{},
 	}
 	defer CleanUp()
+	Relays.Add(1)
 	for i := 1; i < len(os.Args); i += 2 {
 		handle := os.Args[i] + ";" + os.Args[i+1]
-		Relays.Add(1)
 		Relays.list[handle] = &relay{}
 		fmt.Println("init: " + handle)
 		go proxet(handle)
@@ -50,6 +50,9 @@ func main() {
 func proxet(handle string) {
 	targets := strings.Split(handle, ";")
 	t1 := strings.Split(targets[0], ",")
+	if t1[0] == "unix" {
+		os.Remove(t1[1])
+	}
 	l1, err := net.Listen(t1[0], t1[1])
 	if err != nil {
 		fmt.Println(err.Error())
@@ -72,8 +75,12 @@ func proxet(handle string) {
 func handler(handle string) {
 	targets := strings.Split(handle, ";")
 	t2 := strings.Split(targets[1], ",")
+	if t2[0] == "unix" {
+		os.Remove(t2[1])
+	}
 	c2, err := net.Dial(t2[0], t2[1])
 	if err != nil {
+		defer Relays.Done()
 		fmt.Println(err.Error())
 		return
 	}
